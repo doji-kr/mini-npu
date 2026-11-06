@@ -90,8 +90,21 @@ python3 tests/report.py --lang en      # unit tests: what each one checks, and i
 python3 -m unittest discover -s tests  # the same tests in the standard format
 ```
 
-- **Mode 1**: enter filter A, filter B and the pattern line by line, separated by spaces. A format error shows a message and asks for that matrix again. Typing `cross` or `x` on a line generates that array.
+- **Mode 1**: enter filter A, filter B and the pattern line by line, separated by spaces. A bad line gets a reason and only that line is asked for again; lines already accepted are kept. A blank line restarts that matrix. Typing `cross` or `x` on the first line generates that array. Below the scores, `Compute time (mean of 10 runs): 0.001029 ms` shows the mean in milliseconds of timing the same calculation 10 times.
+
+  ```text
+  0 1                 Input format error: enter 3 space-separated numbers per line. (got 2)
+  a b c               Input format error: not a number: 'a'
+  0 1 0               (no error, moves on to the next line)
+  ```
+
 - **Mode 2**: reads `data.json` and prints per-case scores, decisions, PASS/FAIL, a performance table and a summary. If the file is missing, it uses the demo fixture and warns that this is not official data.
+
+To keep the result in a file, redirect the output. Times change between runs.
+
+```bash
+python3 main.py --mode 2 --lang en > report.txt
+```
 
 ### Rain Atlas
 
@@ -294,7 +307,7 @@ All 3 failures in the provided data are **NUMERICAL COMPARISON**.
 | `size_13_2` | 2.66e-15 | gap below ε, so UNDECIDED | X (expected Cross) |
 | `size_25_1` | 1.78e-15 | gap below ε, so UNDECIDED | Cross (expected X) |
 
-- Recomputed with `fractions.Fraction`, the two scores in all three cases are **exactly equal**. The visible gap is floating-point error.
+- Recomputed with fractions, the two scores in all three cases are **exactly equal** (9/10, 15/2, 49/10). The visible gap is floating-point error. When a tie appears, `python3 tools/check_ties.py` recomputes the UNDECIDED cases to show whether it is a true tie or ε hid a real difference.
 - With plain `>`, the direction of that error would have picked the label, and all three labels would have been wrong.
 - The program follows the ε = 1e-9 rule: a tie is UNDECIDED, and UNDECIDED equals no expected label, so it is recorded as FAIL. Whether these 3 FAILs match the authors' intent has not been confirmed.
 
@@ -370,6 +383,7 @@ tests/report.py         prints what each test checks, and its result
 fixtures/               demo data (not official)
 tools/make_fixture.py   demo data generator
 tools/measure_large.py  times a large matrix stage by stage
+tools/check_ties.py     recomputes UNDECIDED cases with fractions
 docker-compose.yml      runs the Rain Atlas image and the console program
 docs/screenshots/       README screens
 ```
