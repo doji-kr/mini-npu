@@ -7,7 +7,7 @@ A console program that compares numeric patterns from 3×3 to 25×25 against fil
 | Result | Location | Requires |
 |---|---|---|
 | **A. Assignment program** | `main.py` | Python 3.8+, standard library only |
-| **B. Rain Atlas learning material** (simulator, runbook, Manim films) | Docker image `jidoil/mini-npu-atlas` | Docker |
+| **B. Rain Atlas learning material** (simulator, terminal, runbook, Manim films) | Docker image `jidoil/mini-npu-atlas` | Docker |
 
 `main.py` does not import the web code, notebook tools or Manim. This repository holds only the code of A; B ships as an image, without its source. A works without ever pulling the image.
 
@@ -15,7 +15,7 @@ A console program that compares numeric patterns from 3×3 to 25×25 against fil
 
 ## Screens
 
-Captured from the public image `jidoil/mini-npu-atlas:1.0.0`. The results shown come from the demo data.
+Captured from the public image `jidoil/mini-npu-atlas:1.1.0`. The results shown come from the demo data.
 
 ### MAC simulator
 
@@ -48,6 +48,12 @@ On a phone, the matrices and the accumulator panel stack vertically.
 **Final analysis.** Failure categories and verification results.
 
 ![Failure categories and verification summary](docs/screenshots/en/chapter-report.webp)
+
+### Terminal
+
+Run the assignment yourself in the real shell on the left. Press ▶ in the guide on the right to send a command to the shell; each step shows the result to expect.
+
+![The terminal page, with the shell beside an ordered guide](docs/screenshots/en/terminal.webp)
 
 ### Runbook
 
@@ -85,9 +91,10 @@ The first run downloads the image (about 670 MiB compressed). It holds the site,
 | Address | Contents |
 |---|---|
 | http://localhost:8790 | Rain Atlas (Korean/English, Day/Night) |
+| http://localhost:8790/terminal.html | A shell in the browser with an ordered guide (ttyd) |
 | http://localhost:8790/runbook.html | The runbook, built into the site (marimo) |
 
-To change the port, run `ATLAS_PORT=9000 docker compose up -d`. The runbook executes code without a token, so it is published on `127.0.0.1` only and nginx refuses requests coming from other sites. **Do not make it reachable from other machines.**
+To change the port, run `ATLAS_PORT=9000 docker compose up -d`. The terminal and the runbook execute code without a token, so they are published on `127.0.0.1` only and nginx refuses requests coming from other sites. **Do not make it reachable from other machines.**
 
 If the server restarts while a runbook is open, the runbook may open with its cells not yet run. Press the **Restart** button on the page.
 
@@ -96,6 +103,14 @@ If the server restarts while a runbook is open, the runbook may open with its ce
 | Console program | `docker compose run --rm cli` |
 | Unit tests | `docker compose run --rm cli python -m unittest discover -s tests` |
 | Stop | `docker compose down` |
+
+## Terminal
+
+Open it with `00` on the rail or `TERMINAL` in the top bar. Nine steps run in order, from checking the environment through Mode 1, Mode 2, the decision rules and performance to the unit tests.
+
+- The shell runs in a local Docker container, not in your browser.
+- The code is read-only, and files written to `/tmp` disappear when the container restarts.
+- Reloading the page starts a new shell session and resets the progress. Switching language keeps the session.
 
 ## Runbook
 
@@ -232,5 +247,6 @@ docs/screenshots/       README screens
 - Without the official `data.json`, the failure analysis and performance figures are based on demo data.
 - The web design starts from the prototype `mini_npu_rain_atlas.html` and refines it while keeping its identity, so it is not identical to the original. Once running, the original is at http://localhost:8790/reference/mini_npu_rain_atlas.html.
 - Some web fonts come from Google Fonts, so fallback fonts appear offline. Functions are unaffected.
+- The terminal uses the official `ttyd` 1.7.7 release binary, checked by SHA-256 when the image is built. It is not code written for this project.
 - The source of the Atlas and runbook is not in this repository, so B cannot run without the image.
 - The Manim films are pre-rendered, not live computation. The 25 MAC units in the film are an illustration, not a real chip's specification.

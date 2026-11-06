@@ -7,7 +7,7 @@
 | 결과물 | 위치 | 요구 사항 |
 |---|---|---|
 | **A. 과제 제출 프로그램** | `main.py` | Python 3.8 이상, 표준 라이브러리만 사용 |
-| **B. Rain Atlas 학습 자료** (시뮬레이터, 런북, Manim 영상) | Docker 이미지 `jidoil/mini-npu-atlas` | Docker |
+| **B. Rain Atlas 학습 자료** (시뮬레이터, 터미널, 런북, Manim 영상) | Docker 이미지 `jidoil/mini-npu-atlas` | Docker |
 
 `main.py`는 웹, 노트북 도구, Manim을 import하지 않습니다. 이 저장소에는 A의 코드만 있고, B는 소스 없이 이미지로 제공합니다. 이미지를 받지 않아도 A는 그대로 동작합니다.
 
@@ -15,7 +15,7 @@
 
 ## 화면
 
-공개 이미지 `jidoil/mini-npu-atlas:1.0.0`에서 찍은 화면입니다. 표시된 결과는 데모 데이터 기준입니다.
+공개 이미지 `jidoil/mini-npu-atlas:1.1.0`에서 찍은 화면입니다. 표시된 결과는 데모 데이터 기준입니다.
 
 ### MAC 시뮬레이터
 
@@ -48,6 +48,12 @@
 **최종 분석.** 실패 원인 분류와 검증 결과입니다.
 
 ![실패 분류와 검증 요약](docs/screenshots/ko/chapter-report.webp)
+
+### 터미널
+
+왼쪽의 실제 셸에서 과제 요구 사항을 직접 실행합니다. 오른쪽 가이드의 ▶를 누르면 명령이 셸로 전송되고, 단계별로 나와야 할 결과를 함께 보여 줍니다.
+
+![셸과 순서별 가이드가 나란히 있는 터미널 페이지](docs/screenshots/ko/terminal.webp)
 
 ### 런북
 
@@ -85,9 +91,10 @@ docker compose up -d
 | 주소 | 내용 |
 |---|---|
 | http://localhost:8790 | Rain Atlas (한/영, Day/Night 전환) |
+| http://localhost:8790/terminal.html | 브라우저 안의 셸과 순서별 가이드 (ttyd) |
 | http://localhost:8790/runbook.html | 사이트 안에 내장된 런북 (marimo) |
 
-포트를 바꾸려면 `ATLAS_PORT=9000 docker compose up -d`를 사용합니다. 런북은 토큰 없이 코드를 실행하므로 `127.0.0.1`에만 공개하고, nginx가 다른 사이트에서 오는 요청을 막습니다. **다른 컴퓨터에서 접근 가능하게 바꾸지 마세요.**
+포트를 바꾸려면 `ATLAS_PORT=9000 docker compose up -d`를 사용합니다. 터미널과 런북은 토큰 없이 코드를 실행하므로 `127.0.0.1`에만 공개하고, nginx가 다른 사이트에서 오는 요청을 막습니다. **다른 컴퓨터에서 접근 가능하게 바꾸지 마세요.**
 
 런북을 연 채로 서버를 재시작하면 셀이 실행되지 않은 상태로 열릴 수 있습니다. 이때는 화면의 **Restart** 버튼을 누르세요.
 
@@ -96,6 +103,14 @@ docker compose up -d
 | 콘솔 프로그램 | `docker compose run --rm cli` |
 | 단위 테스트 | `docker compose run --rm cli python -m unittest discover -s tests` |
 | 종료 | `docker compose down` |
+
+## 터미널
+
+왼쪽 레일의 `00`이나 상단 `TERMINAL`을 누르면 열립니다. 환경 확인, Mode 1, Mode 2, 판정 규칙, 성능 측정, 단위 테스트까지 아홉 단계를 순서대로 실행합니다.
+
+- 셸은 브라우저가 아니라 로컬 Docker 컨테이너에서 실행됩니다.
+- 코드는 읽기 전용이고, `/tmp`에 쓴 파일은 컨테이너를 재시작하면 사라집니다.
+- 페이지를 새로 고치면 셸 세션과 진행 표시가 처음으로 돌아갑니다. 언어를 바꿔도 셸 세션은 유지됩니다.
 
 ## 런북
 
@@ -232,5 +247,6 @@ docs/screenshots/       README 화면
 - 공식 `data.json`이 없어 실패 분석과 성능 값은 데모 데이터 기준입니다.
 - 웹 디자인은 프로토타입 `mini_npu_rain_atlas.html`에서 출발해 정체성을 유지하면서 다듬었으므로 원본과 같지 않습니다. 원본은 실행 후 http://localhost:8790/reference/mini_npu_rain_atlas.html 에서 볼 수 있습니다.
 - 웹 글꼴 일부는 Google Fonts에서 받으므로 오프라인에서는 대체 글꼴로 표시됩니다. 기능에는 영향이 없습니다.
+- 터미널은 공식 릴리스 `ttyd` 1.7.7 바이너리를 빌드할 때 SHA-256으로 확인해 이미지에 넣습니다. 직접 작성한 코드가 아닙니다.
 - Atlas와 런북의 소스는 이 저장소에 없으므로, 이미지 없이는 B를 실행할 수 없습니다.
 - Manim 영상은 미리 렌더링한 것이며 실시간 계산이 아닙니다. 영상의 25 MAC 유닛은 설명용이며 실제 칩의 사양이 아닙니다.

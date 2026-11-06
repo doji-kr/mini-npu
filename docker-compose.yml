@@ -4,7 +4,7 @@
 # must not be reachable from other machines.
 services:
   atlas:
-    image: jidoil/mini-npu-atlas:1.0.0
+    image: jidoil/mini-npu-atlas:1.1.0
     ports:
       - "127.0.0.1:${ATLAS_PORT:-8790}:8080"
     read_only: true
