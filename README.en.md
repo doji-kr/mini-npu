@@ -15,7 +15,7 @@ A console program that compares numeric patterns from 3×3 to 25×25 against fil
 
 ## Screens
 
-Captured from the public image `jidoil/mini-npu-atlas:1.2.0`. The results shown come from the provided data.
+Captured from the public image `jidoil/mini-npu-atlas:1.2.1`. The results shown come from the provided data.
 
 ### MAC simulator
 
