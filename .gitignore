@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.env
+.local/
+.cache/
+.ipython/
+.config/
+.npm/
+media/
+!web/media/
+animations/_build/
+notebooks/media/
+__marimo__/
