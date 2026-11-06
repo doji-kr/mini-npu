@@ -143,6 +143,10 @@ The runbook opens **inside the site**, not in a separate window. Use `RB` on the
 
 Multiply the elements of input $P$ and filter $F$ at the same position and add everything up. This is neither a sliding convolution nor matrix multiplication.
 
+$$\text{score} = \sum_{i=1}^{N} \sum_{j=1}^{N} P_{ij} F_{ij}$$
+
+Read the elements, multiply them, add to the running total, and return it at the end. What the score means is in [Design notes](#design-notes).
+
 ```python
 def mac(pattern, filter_matrix):
     n = len(pattern)
@@ -163,13 +167,100 @@ Before comparing, every label becomes a canonical `Cross` or `X`. Surrounding sp
 | `x` (expected, filter keys) | `X` |
 | anything else | no guessing: that case is recorded as FAIL |
 
+Keeping the label rule in one function, `normalize_label`, means `expected` and the filter keys follow the same rule, with one place to add a spelling or test it.
+
 ### Epsilon policy
 
 If `abs(a - b) < 1e-9`, the two scores count as equal and the result is `UNDECIDED`. In Mode 2, `UNDECIDED` can never match `expected`, so it is a FAIL. Decimals such as 0.1 are not stored exactly in binary, so `==` can call mathematically equal sums different.
 
+- **Why this value**: in the provided data, tied cases differ by at most 2.66e-15 and cases that really separate differ by at least 8.8. 1e-9 sits comfortably between them.
+- **Changing it**: edit the constant `EPSILON` in `main.py`. `decide()` also takes an `epsilon` argument. There is no command-line option.
+- **By mode**: Mode 1 is read by a person, so it says "undecided". Mode 2 is an evaluation against expected labels, so it counts a FAIL.
+
 ### Data handling
 
 N comes from the key (`size_13_2` → 13), which selects `filters["size_13"]`. Row counts, column counts and numeric values are checked, then MAC decides. An error in one case never stops the program: it becomes that case's FAIL with a reason.
+
+Key formats are `size_N` for a filter group and `size_N_idx` for a pattern. N is an integer of at least 1, and idx is a non-empty string (`size_13_2`, `size_5_a`). `pattern_1`, `size_x_1` and `size_0_1` are DATA / SCHEMA FAILs.
+
+## Design notes
+
+### Why a MAC score means similarity
+
+Unroll the matrices and MAC is the **dot product** of two vectors.
+
+$$\text{score} = \sum_{i,j} P_{ij} F_{ij} = \mathbf{p} \cdot \mathbf{f} = \|\mathbf{p}\| \, \|\mathbf{f}\| \cos\theta$$
+
+$\cos\theta$ says how closely the two vectors point the same way: near 1 for the same shape, 0 with no overlapping cells. When one pattern meets two filters, $\|\mathbf{p}\|$ is the same, so if the filter magnitudes $\|\mathbf{f}\|$ are also equal, **the higher score belongs to the filter more like the pattern**. With 0s and 1s, the score is simply the number of overlapping cells: a 3×3 Cross overlaps itself in 5 cells and X in the center cell only.
+
+MAC does not divide out magnitude, though, so a filter with larger weights scores higher for that reason alone. The provided filters differ greatly in magnitude (`size_5`: Cross 2.97, X 0.30), and that is where the 3 ties come from.
+
+| Case | Expected | MAC: Cross, X | Cosine: Cross, X | Label cosine picks |
+|---|---|---|---|---|
+| `size_5_1` | X | 0.9, 0.9 | 0.101, 1.000 | X |
+| `size_13_2` | Cross | 7.5, 7.5 | 1.000, 0.196 | Cross |
+| `size_25_1` | X | 4.9, 4.9 | 0.083, 1.000 | X |
+
+The MAC values are the exact results computed with fractions. Cosine matches the expected label in all 6 cases, but this is a separate analysis: `main.py` decides by unnormalized MAC and ε, as the assignment specifies.
+
+### How to add a new label
+
+**A new spelling of an existing label** (for example `×` for X)
+
+1. Add `"×": X` to `LABEL_ALIASES` in `main.py`. Input is stripped and lowercased before the lookup, so write keys in lowercase.
+2. Add the spelling to `test_required_mappings`. If you now accept a value listed in `test_unsupported_labels` (`plus`, `o` and so on), remove it there.
+3. Check with `python3 tests/report.py` and `python3 main.py --mode 2`.
+
+**A new class** (for example a T shape)
+
+1. Add a constant `T` and a label list `LABELS`, and add its spellings to `LABEL_ALIASES`.
+2. Change the `{CROSS, X}` check in `load_filter_group` to use `LABELS`.
+3. Make `evaluate_case` score every filter and return a dictionary by label.
+4. In `analyze_case`, check that all scores are finite and pass the top two to `decide`. If they are within ε, the result is UNDECIDED.
+5. Update `print_case` and the messages that name Cross and X (`filter_ok`, `r_group_labels`, `r_tie`, `r_nonfinite_score`).
+6. Add the new filter to every `size_N` group in the data. Cases of a size without it become DATA / SCHEMA FAILs.
+7. Add the new filter to the test data, then add tests for the new class and descriptions in `tests/report.py`.
+
+Both procedures were tried on a scratch copy. With the new spelling, all 61 tests still passed. The three-class version decided 5×5 T, X and Cross patterns correctly; before step 7, 14 tests failed because their data has only two filters. The submitted code stays with Cross and X, as assigned. The web pages in the Docker image also assume two scores and would need their own changes.
+
+### What changes at 1000×1000
+
+`python3 tools/measure_large.py` measures one case stage by stage (Python 3.12.16, Linux aarch64, mean of 3 runs; values differ between runs).
+
+| Stage | Time (ms) | Share |
+|---|---:|---:|
+| JSON parse, 3 matrices | 306.0 | 32.4% |
+| `validate_matrix` × 3 | 532.9 | 56.4% |
+| `mac` × 2 | 105.9 | 11.2% |
+| `decide` | 0.006 | 0.0% |
+| Total | 944.7 | |
+
+**The bottleneck is input handling, not multiplication.** Memory tells the same story: parsing 14.3 MiB of JSON text peaks at 94 MiB, because each cell of a Python list holds its own float object. Improvements, in order:
+
+| Order | Method | Evidence |
+|---|---:|---|
+| 1 | Binary arrays instead of JSON input | Removes parsing. With `array('d')`, 3 matrices take 22.9 MiB (calculated) |
+| 2 | Read and validate filters once per size | Pays off with more cases. `load_filters` already works this way |
+| 3 | Multiply only a filter's non-zero cells | A Cross filter has 3996 of 1,000,000. 47.6 ms → 0.362 ms |
+| 4 | Contiguous 1D layout and built-ins | 2D 48.2 ms → 1D 38.6 ms → `sum(map(mul))` 24.6 ms |
+| 5 | Vector operations implemented in C | `math.sumprod` 9.0 ms. Needs Python 3.12+, so it is not in the 3.8-compatible submission |
+| 6 | Row blocks across processes | Threads cannot speed this up because of the GIL, and processes pay copying costs (not measured) |
+
+**The numeric policy has to change too.** The same products added in reverse order must have the same exact sum, yet at 1000×1000 the gap was **3.81e-09**, above ε, so a true tie was decided as A. At 100×100 it was 4.55e-12, within ε. Error grows with the number of additions and the size of the score, so this scale needs `math.fsum` (gap 0 in this experiment) or a relative tolerance such as `math.isclose`.
+
+### CPU versus NPU
+
+This program runs on a CPU only. The NPU entries are explanation, not measurement.
+
+| | CPU (this program) | NPU |
+|---|---|---|
+| Execution | One core, one multiply and add at a time | $P$ MAC units in parallel in the same cycle |
+| One 1000×1000 MAC | $N^2 \times t$. Measured 48 ms | About $N^2 / P$ cycles, plus moving data |
+| Main bottleneck | Interpreter cost and scattered objects | Memory bandwidth and on-chip memory size |
+
+- **Size of the CPU bottleneck**: on the same CPU, `mac()` takes 48 ms and `math.sumprod`, implemented in C, takes 9 ms. What Python does per cell costs more than the multiplication itself.
+- **Size of the NPU bottleneck**: assume $P = 1024$, 1 GHz and 8-bit values. The computation takes 977 cycles, about 1 µs. But each cycle needs 2 KB of values, about 2 TB/s if read directly from external memory, which is why an NPU keeps filters and inputs in on-chip memory close to the units. These numbers are an illustration, not a real chip's specification.
+- **Faster MAC alone is not enough**: MAC is 11.2% in the table above, so even infinitely fast MAC speeds this case up by at most about 1.13 times (Amdahl's law). Getting the NPU's benefit also means reducing input preparation and data movement.
 
 ## Result report
 
@@ -227,7 +318,7 @@ All 3 failures in the provided data are **NUMERICAL COMPARISON**.
 
 ### Performance
 
-The web page and the table below average 2000 runs per size to reduce noise. The console program averages the required 10, so its values vary more. File reads and console output are outside the timed section.
+The web page and the table below average 2000 runs per size to reduce noise. The console program averages the required 10, so its values vary more. Only the `mac()` call is timed; file reads, JSON parsing, input validation and `print` output are excluded.
 
 | Size | Operations N² | Mean time (ms) | Time per MAC (ns) |
 |---|---:|---:|---:|
@@ -278,6 +369,7 @@ tests/test_mini_npu.py  unit tests
 tests/report.py         prints what each test checks, and its result
 fixtures/               demo data (not official)
 tools/make_fixture.py   demo data generator
+tools/measure_large.py  times a large matrix stage by stage
 docker-compose.yml      runs the Rain Atlas image and the console program
 docs/screenshots/       README screens
 ```
