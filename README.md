@@ -13,6 +13,50 @@
 
 > **데이터 안내**: 공식 `data.json`을 받지 못해 이 저장소의 결과는 직접 만든 **데모 데이터** `fixtures/sample_data.json`으로 측정했습니다. 공식 결과가 아닙니다. 공식 파일을 저장소 맨 위에 `data.json`으로 두면 프로그램이 그 파일을 우선 사용합니다.
 
+## 화면
+
+공개 이미지 `jidoil/mini-npu-atlas:1.0.0`에서 찍은 화면입니다. 표시된 결과는 데모 데이터 기준입니다.
+
+### MAC 시뮬레이터
+
+| Day | Night |
+|---|---|
+| ![Day 모드의 MAC 시뮬레이터](docs/screenshots/ko/atlas-day.webp) | ![Night 모드의 MAC 시뮬레이터](docs/screenshots/ko/atlas-night.webp) |
+
+모바일에서는 행렬과 누적 패널이 위아래로 배치됩니다.
+
+<img src="docs/screenshots/ko/atlas-mobile.webp" alt="모바일 폭의 MAC 시뮬레이터" width="300">
+
+### 챕터
+
+**개념, 수식, Manim 영상.** 영상은 미리 렌더링한 것입니다.
+
+![MAC 챕터의 개념 설명과 Manim 영상](docs/screenshots/ko/chapter-mac.webp)
+
+**판정.** 입력을 Cross에서 X로 섞으며 점수와 결정 경계를 관찰합니다.
+
+![α 슬라이더와 점수 차트](docs/screenshots/ko/chapter-decision.webp)
+
+**데이터셋.** 케이스를 누르면 어느 단계에서 멈췄는지 보여 줍니다.
+
+![케이스별 판정 표와 상세 정보](docs/screenshots/ko/chapter-dataset.webp)
+
+**성능.** 파이썬 실측값과 N²에 대한 직선 적합입니다.
+
+![연산 횟수에 따른 시간 차트와 측정 표](docs/screenshots/ko/chapter-performance.webp)
+
+**최종 분석.** 실패 원인 분류와 검증 결과입니다.
+
+![실패 분류와 검증 요약](docs/screenshots/ko/chapter-report.webp)
+
+### 런북
+
+사이트 안에서 한 셀씩 읽고, 슬라이더를 움직이면 파이썬이 다시 계산합니다.
+
+| 처음 화면 | 슬라이더와 차트 |
+|---|---|
+| ![런북 처음 화면](docs/screenshots/ko/runbook.webp) | ![슬라이더로 다시 계산되는 런북 셀](docs/screenshots/ko/runbook-interactive.webp) |
+
 ## 실행 방법
 
 ### 제출 프로그램
@@ -180,6 +224,7 @@ tests/                  단위 테스트
 fixtures/               데모 데이터 (공식 데이터 아님)
 tools/make_fixture.py   데모 데이터 생성
 docker-compose.yml      Rain Atlas 이미지 실행, 콘솔 프로그램 실행
+docs/screenshots/       README 화면
 ```
 
 ## 한계

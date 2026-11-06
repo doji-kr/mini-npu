@@ -13,6 +13,50 @@ A console program that compares numeric patterns from 3×3 to 25×25 against fil
 
 > **About the data**: the official `data.json` was not available, so the results here were measured on a hand-made **demo fixture**, `fixtures/sample_data.json`. They are not official results. Put the official file in the repository root as `data.json` and the program uses it first.
 
+## Screens
+
+Captured from the public image `jidoil/mini-npu-atlas:1.0.0`. The results shown come from the demo data.
+
+### MAC simulator
+
+| Day | Night |
+|---|---|
+| ![The MAC simulator in Day mode](docs/screenshots/en/atlas-day.webp) | ![The MAC simulator in Night mode](docs/screenshots/en/atlas-night.webp) |
+
+On a phone, the matrices and the accumulator panel stack vertically.
+
+<img src="docs/screenshots/en/atlas-mobile.webp" alt="The MAC simulator at phone width" width="300">
+
+### Chapters
+
+**Concept, equation and Manim film.** The film is pre-rendered.
+
+![Concept text and Manim film in the MAC chapter](docs/screenshots/en/chapter-mac.webp)
+
+**Decision.** Blend the input from Cross to X and watch the scores and the decision boundary.
+
+![The alpha slider and score chart](docs/screenshots/en/chapter-decision.webp)
+
+**Dataset.** Click a case to see the stage where it stopped.
+
+![Per-case results table and case detail](docs/screenshots/en/chapter-dataset.webp)
+
+**Performance.** Python measurements with a straight-line fit against N².
+
+![Time against operation count, with the measurement table](docs/screenshots/en/chapter-performance.webp)
+
+**Final analysis.** Failure categories and verification results.
+
+![Failure categories and verification summary](docs/screenshots/en/chapter-report.webp)
+
+### Runbook
+
+Read one cell at a time inside the site. Move a slider and Python recalculates.
+
+| Opening | Slider and chart |
+|---|---|
+| ![The opening of the runbook](docs/screenshots/en/runbook.webp) | ![A runbook cell recalculating from a slider](docs/screenshots/en/runbook-interactive.webp) |
+
 ## How to run
 
 ### The assignment program
@@ -180,6 +224,7 @@ tests/                  unit tests
 fixtures/               demo data (not official)
 tools/make_fixture.py   demo data generator
 docker-compose.yml      runs the Rain Atlas image and the console program
+docs/screenshots/       README screens
 ```
 
 ## Limitations
