@@ -11,11 +11,11 @@ A console program that compares numeric patterns from 3×3 to 25×25 against fil
 
 `main.py` does not import the web code, notebook tools or Manim. This repository holds only the code of A; B ships as an image, without its source. A works without ever pulling the image.
 
-> **About the data**: the official `data.json` was not available, so the results here were measured on a hand-made **demo fixture**, `fixtures/sample_data.json`. They are not official results. Put the official file in the repository root as `data.json` and the program uses it first.
+> **About the data**: results were measured on the provided assignment data, `data.json` (6 cases). The hand-made `fixtures/sample_data.json` (16 cases) is a demo for checking the five failure types and is not official data.
 
 ## Screens
 
-Captured from the public image `jidoil/mini-npu-atlas:1.1.0`. The results shown come from the demo data.
+Captured from the public image `jidoil/mini-npu-atlas:1.2.0`. The results shown come from the provided data.
 
 ### MAC simulator
 
@@ -49,11 +49,23 @@ On a phone, the matrices and the accumulator panel stack vertically.
 
 ![Failure categories and verification summary](docs/screenshots/en/chapter-report.webp)
 
+### Architecture
+
+One page covers the container, the path `main.py` takes in the terminal, how filters, MAC, ε and the decision relate, and the file structure. Pick a case and the provided data's real values appear along the compute path.
+
+![The system map and the terminal program](docs/screenshots/en/architecture.webp)
+
+![A provided case passing through filters, MAC, ε and the decision](docs/screenshots/en/architecture-core.webp)
+
 ### Terminal
 
 Run the assignment yourself in the real shell on the left. Press ▶ in the guide on the right to send a command to the shell; each step shows the result to expect.
 
 ![The terminal page, with the shell beside an ordered guide](docs/screenshots/en/terminal.webp)
+
+The unit test step prints what each test checked, its result and a summary by group.
+
+![The unit test report, listing each check and its result](docs/screenshots/en/terminal-report.webp)
 
 ### Runbook
 
@@ -74,7 +86,8 @@ python3 main.py --mode 2               # Mode 2: analyze data.json
 python3 main.py --mode 2 --lang en     # English output
 python3 main.py --mode 2 --data path.json
 
-python3 -m unittest discover -s tests  # unit tests
+python3 tests/report.py --lang en      # unit tests: what each one checks, and its result
+python3 -m unittest discover -s tests  # the same tests in the standard format
 ```
 
 - **Mode 1**: enter filter A, filter B and the pattern line by line, separated by spaces. A format error shows a message and asks for that matrix again. Typing `cross` or `x` on a line generates that array.
@@ -91,6 +104,7 @@ The first run downloads the image (about 670 MiB compressed). It holds the site,
 | Address | Contents |
 |---|---|
 | http://localhost:8790 | Rain Atlas (Korean/English, Day/Night) |
+| http://localhost:8790/architecture.html | The system, compute path and file structure |
 | http://localhost:8790/terminal.html | A shell in the browser with an ordered guide (ttyd) |
 | http://localhost:8790/runbook.html | The runbook, built into the site (marimo) |
 
@@ -101,13 +115,15 @@ If the server restarts while a runbook is open, the runbook may open with its ce
 | Task | Command |
 |---|---|
 | Console program | `docker compose run --rm cli` |
-| Unit tests | `docker compose run --rm cli python -m unittest discover -s tests` |
+| Unit test report | `docker compose run --rm cli python tests/report.py --lang en` |
 | Stop | `docker compose down` |
 
 ## Terminal
 
 Open it with `00` on the rail or `TERMINAL` in the top bar. Nine steps run in order, from checking the environment through Mode 1, Mode 2, the decision rules and performance to the unit tests.
 
+- `data.json` in the terminal is the provided data. Each step also explains the idea, the intent and the expected result.
+- The unit test step prints what each test checked, PASS or FAIL, and a summary by group.
 - The shell runs in a local Docker container, not in your browser.
 - The code is read-only, and files written to `/tmp` disappear when the container restarts.
 - Reloading the page starts a new shell session and resets the progress. Switching language keeps the session.
@@ -157,17 +173,41 @@ N comes from the key (`size_13_2` → 13), which selects `filters["size_13"]`. R
 
 ## Result report
 
-Environment: Docker `python:3.12-slim`, Python 3.12.16, Linux aarch64, 16 demo cases.
+Environment: Docker `python:3.12-slim`, Python 3.12.16, Linux aarch64, the 6 cases of the provided `data.json`.
 
 ### Test results
 
-- **60 unit tests pass** (Python 3.8.20, 3.12.16 and 3.14.10)
+- **61 unit tests pass** (Python 3.8.20, 3.12.16 and 3.14.10). `python3 tests/report.py --lang en` shows what each test checks and its result.
 - JS and Python test vectors: **21/21 match**
-- Demo data: **16 total, 8 passed, 8 failed**
+- Provided data: **6 total, 3 passed, 3 failed**
+- Demo data: **16 total, 8 passed, 8 failed** (as intended)
+
+### Provided data results
+
+| Case | Cross score | X score | Decision | Expected | Result |
+|---|---:|---:|---|---|---|
+| `size_5_1` | 0.9 | 0.8999999999999999 | UNDECIDED | X | FAIL |
+| `size_5_2` | 8.9 | 0.1 | Cross | Cross | PASS |
+| `size_13_1` | 0.3 | 14.700000000000008 | X | X | PASS |
+| `size_13_2` | 7.499999999999997 | 7.5 | UNDECIDED | Cross | FAIL |
+| `size_25_1` | 4.9 | 4.899999999999999 | UNDECIDED | X | FAIL |
+| `size_25_2` | 52.9 | 0.1 | Cross | Cross | PASS |
 
 ### Failure analysis
 
-The 8 failures were **put into the demo data on purpose**, to confirm that every failure type is handled correctly. That is why failures are not zero, and they are not errors in `main.py`.
+All 3 failures in the provided data are **NUMERICAL COMPARISON**.
+
+| Case | Score gap | Cause | With plain `>` |
+|---|---:|---|---|
+| `size_5_1` | 1.11e-16 | gap below ε, so UNDECIDED | Cross (expected X) |
+| `size_13_2` | 2.66e-15 | gap below ε, so UNDECIDED | X (expected Cross) |
+| `size_25_1` | 1.78e-15 | gap below ε, so UNDECIDED | Cross (expected X) |
+
+- Recomputed with `fractions.Fraction`, the two scores in all three cases are **exactly equal**. The visible gap is floating-point error.
+- With plain `>`, the direction of that error would have picked the label, and all three labels would have been wrong.
+- The program follows the ε = 1e-9 rule: a tie is UNDECIDED, and UNDECIDED equals no expected label, so it is recorded as FAIL. Whether these 3 FAILs match the authors' intent has not been confirmed.
+
+**The 8 failures in the demo data** were **put into** `fixtures/sample_data.json` **on purpose**, to confirm that every failure type is handled correctly.
 
 | Case | Category | Cause | Where to fix |
 |---|---|---|---|
@@ -181,11 +221,9 @@ The 8 failures were **put into the demo data on purpose**, to confirm that every
 | `pattern_1` | DATA / SCHEMA | key is not in `size_N_idx` form | data |
 
 - Splitting failures into five categories shows first whether the data or the code needs fixing.
-- Schema errors lead with 4 only because of how the demo data was built; this says nothing about real data.
 - Waving a label error through as a spelling difference could let wrong data PASS, so unknown values are never guessed.
 - Assigning a tie to either label would let noise decide, so ties are kept apart as UNDECIDED.
 - Computing on just the leading part of a wrongly sized input would quietly give a wrong score, so size is checked before MAC.
-- A run on official data may fail differently, and this table must then be rewritten.
 
 ### Performance
 
@@ -193,49 +231,51 @@ The web page and the table below average 2000 runs per size to reduce noise. The
 
 | Size | Operations N² | Mean time (ms) | Time per MAC (ns) |
 |---|---:|---:|---:|
-| 3×3 | 9 | 0.000578 | 64.2 |
-| 5×5 | 25 | 0.001189 | 47.6 |
-| 13×13 | 169 | 0.006630 | 39.2 |
-| 25×25 | 625 | 0.022710 | 36.3 |
+| 3×3 | 9 | 0.000679 | 75.4 |
+| 5×5 | 25 | 0.001416 | 56.6 |
+| 13×13 | 169 | 0.007265 | 43.0 |
+| 25×25 | 625 | 0.025275 | 40.4 |
 
 ### Time complexity
 
 - `mac()` does one multiply and one add per N×N element: **time O(N²)**, extra space O(1).
 - One case compares against two filters, so 2N² multiplications, still O(N²).
-- Fitting $T = a + b N^2$ gives $a = 3.55 \times 10^{-4}$ ms, $b = 3.59 \times 10^{-5}$ ms and **R² = 0.9998**, nearly a straight line.
-- The log-log slope against $N$, however, is **1.75**, not the theoretical 2, because fixed costs $a$ such as the function call weigh more at small sizes. The per-MAC time in the table falls with size for the same reason.
-- Going from 13×13 to 25×25, for example, theory predicts 3.70 times and the measurement shows 3.43 times.
+- Fitting $T = a + b N^2$ gives $a = 4.14 \times 10^{-4}$ ms, $b = 3.98 \times 10^{-5}$ ms and **R² = 0.9999**, nearly a straight line.
+- The log-log slope against $N$, however, is **1.71**, not the theoretical 2, because fixed costs $a$ such as the function call weigh more at small sizes. The per-MAC time in the table falls with size for the same reason.
+- Going from 13×13 to 25×25, for example, theory predicts 3.70 times and the measurement shows 3.48 times.
 - Theory gives the shape of growth; measurement adds the constants and noise. Values differ between computers and runs.
 
 ### Bonus
 
-**1D optimization**: unrolling the matrix is still O(N²), but with a smaller constant because there is less indexing. It took 0.57 times as long at 3×3 and 0.83 times at 25×25 (mean of 2000 runs).
+**1D optimization**: unrolling the matrix is still O(N²), but with a smaller constant because there is less indexing. It took 0.60 times as long at 3×3 and 0.84 times at 25×25 (mean of 2000 runs).
 
 | Size | 2D (ms) | 1D (ms) | 1D/2D |
 |---|---:|---:|---:|
-| 3×3 | 0.000584 | 0.000332 | 0.57 |
-| 5×5 | 0.001242 | 0.000683 | 0.55 |
-| 13×13 | 0.006156 | 0.003856 | 0.63 |
-| 25×25 | 0.020888 | 0.017414 | 0.83 |
+| 3×3 | 0.000706 | 0.000421 | 0.60 |
+| 5×5 | 0.001428 | 0.000823 | 0.58 |
+| 13×13 | 0.007335 | 0.004647 | 0.63 |
+| 25×25 | 0.025078 | 0.020991 | 0.84 |
 
 **N×N pattern generator**: `make_cross(n)` and `make_x(n)` serve both Mode 1 input and the benchmark.
 
 ## Reproducibility
 
 ```bash
-docker compose run --rm cli python -m unittest discover -s tests
+docker compose run --rm cli python tests/report.py --lang en
 docker compose run --rm cli python main.py --mode 2
 ```
 
 - Scores, decisions and test results are always the same. Only times change between runs.
-- Chapters 5–7 of the web page only display results exported with the real functions of `main.py` when the image was built; the browser does not run Python.
-- To switch to official data, put `data.json` in the repository root and rerun `main.py`. The Atlas and runbook in the image keep showing the demo data.
+- Chapters 5–7 of the web page and COMPUTE CORE on the Architecture page only display results exported ahead of time with the real functions of `main.py`; the browser does not run Python.
+- To analyze another file, use `python3 main.py --mode 2 --data path.json`. The Atlas and runbook in the image show the provided data results.
 
 ## Layout
 
 ```text
 main.py                 assignment program (standard library only)
-tests/                  unit tests
+data.json               provided assignment data
+tests/test_mini_npu.py  unit tests
+tests/report.py         prints what each test checks, and its result
 fixtures/               demo data (not official)
 tools/make_fixture.py   demo data generator
 docker-compose.yml      runs the Rain Atlas image and the console program
@@ -244,7 +284,7 @@ docs/screenshots/       README screens
 
 ## Limitations
 
-- Without the official `data.json`, the failure analysis and performance figures are based on demo data.
+- Whether the 3 failures in the provided data match the authors' intent has not been confirmed. The reasoning for the tie handling is in the failure analysis above.
 - The web design starts from the prototype `mini_npu_rain_atlas.html` and refines it while keeping its identity, so it is not identical to the original. Once running, the original is at http://localhost:8790/reference/mini_npu_rain_atlas.html.
 - Some web fonts come from Google Fonts, so fallback fonts appear offline. Functions are unaffected.
 - The terminal uses the official `ttyd` 1.7.7 release binary, checked by SHA-256 when the image is built. It is not code written for this project.

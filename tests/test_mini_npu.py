@@ -418,5 +418,16 @@ class FixtureTests(unittest.TestCase):
         self.assertTrue(by_id["size_25_3"]["passed"])
 
 
+class ProvidedDataTests(unittest.TestCase):
+    def test_provided_data_outcomes(self):
+        if not os.path.exists(npu.DEFAULT_DATA):
+            self.skipTest("data.json is not present")
+        results = npu.analyze_dataset(npu.load_dataset(npu.DEFAULT_DATA))[2]
+        self.assertEqual(npu.summarize(results), {"total": 6, "passed": 3, "failed": 3})
+        failed = {r["id"]: (r["decision"], r["category"]) for r in results if not r["passed"]}
+        tie = (npu.UNDECIDED, npu.CAT_NUMERIC)
+        self.assertEqual(failed, {"size_5_1": tie, "size_13_2": tie, "size_25_1": tie})
+
+
 if __name__ == "__main__":
     unittest.main()
